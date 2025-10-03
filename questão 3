@@ -10,7 +10,7 @@ class VetRoom:
         self.animals_in_room = []
         self.lock = threading.Lock()
         self.dog_condition = threading.Condition(self.lock)
-        self.cat_condition = threading.Condition(self.lock)
+        self.cat_condition = threading.Condition(self.lock) 
         self.queue = deque()
 
     def can_enter(self, species):
@@ -23,7 +23,7 @@ class VetRoom:
         return False
 
     def animal_enters(self, animal):
-        with self.lock:
+        with self.lock: #critic region
             self.queue.append(animal)
             print(f"[{time.time():.2f}] {animal['id']} ({animal['species']}) arrived in queue. Queue: {[a['id'] for a in self.queue]}")
 
@@ -42,7 +42,7 @@ class VetRoom:
             print(f"[{time.time():.2f}] {animal['id']} ({animal['species']}) entered the room. State: {self.state}. Animals in the room: {[a['id'] for a in self.animals_in_room]}")
 
     def animal_leaves(self, animal):
-        with self.lock:
+        with self.lock: #critic region
             self.animals_in_room.remove(animal)
             print(f"[{time.time():.2f}] {animal['id']}({animal['species']}) left the room. Animals in the room: {[a['id'] for a in self.animals_in_room]}")
 
