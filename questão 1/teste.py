@@ -192,7 +192,7 @@ if __name__ == "__main__":
         {"pid": "P2", "arrival": 6, "burst": 3}
     ]
 
-    # RR: use quantum 2 e CS=1 (exemplo)
+    # RR
     run_and_report("Round Robin", round_robin, processos, quantum=8, context_switch=1, T=20)
 
     # FCFS
