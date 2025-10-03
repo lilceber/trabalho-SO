@@ -1,3 +1,4 @@
+
 from math import sqrt
 
 # -------------------------
@@ -187,13 +188,15 @@ if __name__ == "__main__":
         {"pid": "P1", "arrival": 0, "burst": 5},
         {"pid": "P2", "arrival": 1, "burst": 3},
         {"pid": "P3", "arrival": 2, "burst": 7},
+        {"pid": "P1", "arrival": 4, "burst": 5},
+        {"pid": "P2", "arrival": 6, "burst": 3}
     ]
 
     # RR: use quantum 2 e CS=1 (exemplo)
-    run_and_report("Round Robin q=2", round_robin, processos, quantum=2, context_switch=1, T=100)
+    run_and_report("Round Robin", round_robin, processos, quantum=8, context_switch=1, T=20)
 
     # FCFS
-    run_and_report("FCFS", fcfs, processos, context_switch=1, T=100)
+    run_and_report("FCFS", fcfs, processos, context_switch=1, T=20)
 
     # SJF não preemptivo
-    run_and_report("SJF non-preemptive", sjf_non_preemptive, processos, context_switch=1, T=100)
+    run_and_report("SJF non-preemptive", sjf_non_preemptive, processos, context_switch=1, T=20)
