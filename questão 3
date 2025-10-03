@@ -1,0 +1,105 @@
+import threading
+import time
+import json
+from collections import deque 
+
+class VetRoom:
+    def __init__(self, room_id, initial_state="EMPTY"):
+        self.room_id = room_id
+        self.state = initial_state
+        self.animals_in_room = []
+        self.lock = threading.Lock()
+        self.dog_condition = threading.Condition(self.lock)
+        self.cat_condition = threading.Condition(self.lock)
+        self.queue = deque()
+
+    def can_enter(self, species):
+        if self.state == "EMPTY":
+            return True
+        if self.state == "DOGS" and species == "DOG":
+            return True
+        if self.state == "CATS" and species == "CAT":
+            return True
+        return False
+
+    def animal_enters(self, animal):
+        with self.lock:
+            self.queue.append(animal)
+            print(f"[{time.time():.2f}] {animal['id']} ({animal['species']}) arrived in queue. Queue: {[a['id'] for a in self.queue]}")
+
+            while self.queue[0]['id'] != animal['id'] or not self.can_enter(animal['species']):
+                if animal['species'] == "DOG":
+                    self.dog_condition.wait()
+                else:
+                    self.cat_condition.wait()
+
+            self.queue.popleft()
+            
+            if self.state == "EMPTY":
+                self.state = "DOGS" if animal['species'] == "DOG" else "CATS"
+
+            self.animals_in_room.append(animal)
+            print(f"[{time.time():.2f}] {animal['id']} ({animal['species']}) entered the room. State: {self.state}. Animals in the room: {[a['id'] for a in self.animals_in_room]}")
+
+    def animal_leaves(self, animal):
+        with self.lock:
+            self.animals_in_room.remove(animal)
+            print(f"[{time.time():.2f}] {animal['id']}({animal['species']}) left the room. Animals in the room: {[a['id'] for a in self.animals_in_room]}")
+
+            if not self.animals_in_room:
+                self.state = "EMPTY"
+                print(f"[{time.time():.2f}] Room {self.room_id} is empty.")
+
+            self.dog_condition.notify_all()
+            self.cat_condition.notify_all()
+
+def animal_simulation(animal, room):
+    time.sleep(animal["arrival_time"])
+    room.animal_enters(animal)
+    time.sleep(animal["rest_duration"])
+    room.animal_leaves(animal)
+
+def run_simulation(config):
+    vet_room = VetRoom(room_id=1, initial_state=config["room"]["initial sign state"])
+    
+    threads = []
+    for animal_data in config["workload"]["animals"]:
+        thread = threading.Thread(target=animal_simulation, args=(animal_data, vet_room))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    print("\nEND.")
+
+if __name__ == "__main__":
+    config_json = '''
+    {
+        "spec version": "1.0",
+        "challenge id": "vet room protocol demo",
+        "metadata": {
+            "room count": 1,
+            "allowed states": ["EMPTY", "DOGS", "CATS"],
+            "queue policy": "FIFO",
+            "sign change latency": 0,
+            "tie breaker": ["arrival time", "id"]
+        },
+        "room": {
+            "initial sign state": "EMPTY"
+        },
+        "workload": {
+            "time unit": "ticks",
+            "animals": [
+                { "id": "D01", "species": "DOG", "arrival_time": 0, "rest_duration": 5 },
+                { "id": "C01", "species": "CAT", "arrival_time": 1, "rest_duration": 4 },
+                { "id": "D02", "species": "DOG", "arrival_time": 2, "rest_duration": 6 },
+                { "id": "C02", "species": "CAT", "arrival_time": 3, "rest_duration": 2 },
+                { "id": "D03", "species": "DOG", "arrival_time": 4, "rest_duration": 3 }
+            ]
+        }
+    }
+    '''
+    
+    config_data = json.loads(config_json)
+    run_simulation(config_data)
